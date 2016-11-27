@@ -16,16 +16,17 @@ class ViewController: UIViewController {
     @IBOutlet weak var addToDo: UITextField!
     @IBOutlet weak var bottomViewConstraint: NSLayoutConstraint!
     var selectedIndexPath: IndexPath?
-    var extraHeight: CGFloat = 0
+    var extraHeight: CGFloat?
     
     
     
     @IBAction func addButton(_ sender: Any) {
         if let text = addToDo.text, !text.isEmpty {
             do {
-                try db?.create(title: addToDo.text!,    description: "-", done: false)
+                try db?.create(title: addToDo.text!,    description: "I'm a description.", done: false)
                 tableView.reloadData()
                 addToDo.text = ""
+                addToDo.endEditing(true)
             } catch {
                 print(error)
             }
@@ -40,8 +41,7 @@ class ViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(ViewController.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(ViewController.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
-        
-        tableView.rowHeight = 60
+    
         
        if db == nil {
             print("DB error")
@@ -86,17 +86,42 @@ class ViewController: UIViewController {
     
     func adjustingHeight(show:Bool, notification:NSNotification) {
         var userInfo = notification.userInfo!
-        let keyboardFrame:CGRect = (userInfo[UIKeyboardFrameBeginUserInfoKey] as! NSValue).cgRectValue
-        let animationDurarion = userInfo[UIKeyboardAnimationDurationUserInfoKey] as! TimeInterval
-        let changeInHeight = (keyboardFrame.height + 10) * (show ? 1 : -1)
-        UIView.animate(withDuration: animationDurarion, animations: { () -> Void in
-            self.bottomViewConstraint.constant += changeInHeight
-        })
         
+        if addToDo.isFirstResponder {
+            let keyboardFrame:CGRect = (userInfo[UIKeyboardFrameBeginUserInfoKey] as! NSValue).cgRectValue
+            let animationDurarion = userInfo[UIKeyboardAnimationDurationUserInfoKey] as! TimeInterval
+            let changeInHeight = (keyboardFrame.height + 10) * (show ? 1 : -1)
+            UIView.animate(withDuration: animationDurarion, animations: { () -> Void in
+                self.bottomViewConstraint.constant += changeInHeight
+            })
+        }
+    }
+    
+    override func encodeRestorableState(with coder: NSCoder) {
+        
+        if let addToDoText = addToDo.text {
+            coder.encode(addToDoText, forKey: "addToDoText")
+        }
+        
+        super.encodeRestorableState(with: coder)
+    }
+    
+    override func decodeRestorableState(with coder: NSCoder) {
+        
+        if let addToDoText = coder.decodeObject(forKey: "addToDoText") as? String {
+            self.addToDo.text = addToDoText
+        }
+        
+        
+        super.decodeRestorableState(with: coder)
     }
 
-
 }
+
+
+
+
+
 
 extension ViewController: UITableViewDelegate, UITableViewDataSource, ToDOTableViewCellDelegate {
     
@@ -130,7 +155,7 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource, ToDOTableV
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if selectedIndexPath == indexPath {
-            return 60.0 + extraHeight
+            return 60.0 + extraHeight!
         }
         
         return 60.0
@@ -144,7 +169,7 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource, ToDOTableV
         let currentCell = tableView.cellForRow(at: selectedIndexPath!) as! ToDOTableViewCell
         if !currentCell.expanded {
             currentCell.todoDesc.sizeToFit()
-            extraHeight = currentCell.todoDesc.frame.height + 20
+            extraHeight = currentCell.todoDesc.frame.height + 10
             currentCell.expanded = true
         }
         else {
@@ -167,7 +192,30 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource, ToDOTableV
                     }
         cellAction.backgroundColor = UIColor.blue
         
-        return [cellAction]
+        // Second action
+        selectedIndexPath = indexPath
+        let cellEditAction = UITableViewRowAction(style: .default, title: "Edit") { (action, index) in
+            let cell = tableView.cellForRow(at: self.selectedIndexPath!) as! ToDOTableViewCell
+            self.tableView.setEditing(false, animated: true)
+            cell.todoDesc.sizeToFit()
+            self.extraHeight = cell.todoDesc.frame.height + 10
+            cell.expanded = true
+            tableView.reloadRows(at: [self.selectedIndexPath!], with: .none)
+            cell.todoDesc.becomeFirstResponder()
+            
+        }
+        cellEditAction.backgroundColor = UIColor.cyan
+
+        
+        return [cellAction,cellEditAction]
+    }
+    
+    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+        return CGFloat.leastNormalMagnitude
+    }
+    
+    func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
+        return UIView()
     }
 }
 

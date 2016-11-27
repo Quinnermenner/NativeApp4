@@ -14,8 +14,8 @@ protocol ToDOTableViewCellDelegate {
 
 class ToDOTableViewCell: UITableViewCell {
 
-    @IBOutlet weak var todoTitle: UILabel!
-    @IBOutlet weak var todoDesc: UILabel!
+    @IBOutlet weak var todoTitle: UITextView!
+    @IBOutlet weak var todoDesc: UITextView!
     @IBOutlet weak var todoCheck: UIButton!
     var expanded = false
     var done = false
@@ -28,7 +28,6 @@ class ToDOTableViewCell: UITableViewCell {
         }
         
     }
-    
     
     
     func updateImage() {
@@ -46,11 +45,11 @@ class ToDOTableViewCell: UITableViewCell {
         // Initialization code
     }
 
-//    override func setSelected(_ selected: Bool, animated: Bool) {
-//        super.setSelected(selected, animated: animated)
-//
-//        // Configure the view for the selected state
-//    }
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+
+        // Configure the view for the selected state
+    }
     
 
     

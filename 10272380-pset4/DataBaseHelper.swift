@@ -134,8 +134,25 @@ class DataBaseHelper {
                     if try db!.run(check.update(self.done <- true)) > 0 {
                     }
                 }
-                
             }
+        }
+    }
+    
+    func updateToDo(index: Int, desc: String) throws {
+        do {
+            let all = Array(try db!.prepare(todo))
+            let checkId = all[index][id]
+            
+            let check = todo.filter(id == checkId)
+            
+            
+            if try db!.run(check.update(self.description <- desc)) > 0 {
+                print("Succes updating desc")
+            } else {
+                print("failure to update desc")
+            }
+        } catch {
+            throw error
         }
     }
     
